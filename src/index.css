@@ -1,0 +1,101 @@
+/* Lyftr Design System - Premium Dark Mode */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* HSL Color Palette */
+  /* Backgrounds */
+  --bg-app: 240 5% 7%; /* #111113 - Very Dark */
+  --bg-card: 240 4% 12%; /* #1D1D20 - Card Background */
+  --bg-input: 240 4% 18%; /* #2C2C30 - Input Background */
+
+  /* Text */
+  --text-primary: 0 0% 100%;
+  --text-secondary: 240 5% 70%;
+  --text-muted: 240 5% 45%;
+
+  /* Accents */
+  --primary: 260 100% 65%; /* #8A4FFF - Vibrant Purple */
+  --primary-hover: 260 100% 70%;
+  --success: 145 65% 45%; /* #28bf64 - GitHub-ish Green */
+  --danger: 350 80% 60%;
+
+  /* Layout */
+  --max-width: 600px;
+  --header-height: 64px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Animations */
+  --transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+[data-theme="light"] {
+  --bg-app: 0 0% 98%;      /* #FAFAFA */
+  --bg-card: 0 0% 100%;    /* #FFFFFF */
+  --bg-input: 240 5% 96%;  /* #F4F4F5 */
+
+  --text-primary: 240 5% 10%;
+  --text-secondary: 240 4% 40%;
+  --text-muted: 240 4% 60%;
+
+  --primary: 260 100% 60%; 
+  --primary-hover: 260 100% 65%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background-color: hsl(var(--bg-app));
+  color: hsl(var(--text-primary));
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+#root {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Utilities */
+.glass-panel {
+  background: hsla(var(--bg-card) / 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsla(0, 0%, 100%, 0.05);
+  border-radius: var(--radius-md);
+}
+
+.btn-primary {
+  background-color: hsl(var(--primary));
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: var(--transition);
+  width: 100%;
+  text-align: center;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
