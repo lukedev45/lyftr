@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { EXERCISES, ROUTINES } from '../logic/startingStrength';
 import { ContributionGraph } from './ContributionGraph';
 
-export function Dashboard({ nextType, weights, onWeightChange, onStartWorkout, history, unit }) {
+export function Dashboard({ nextType, weights, onWeightChange, onStartWorkout, onAddPastWorkout, history, unit }) {
   const routine = ROUTINES[nextType];
 
   const stats = useMemo(() => {
@@ -177,6 +177,26 @@ export function Dashboard({ nextType, weights, onWeightChange, onStartWorkout, h
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
           Start Workout {nextType}
+        </button>
+
+        <button
+          className="btn-ghost"
+          onClick={onAddPastWorkout}
+          style={{
+            width: '100%',
+            marginTop: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            fontSize: '0.8rem',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          Log a past workout
         </button>
       </div>
 

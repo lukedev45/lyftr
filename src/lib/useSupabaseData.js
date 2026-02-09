@@ -43,11 +43,14 @@ export function useSupabaseData(session) {
           .single();
 
         if (profile) {
-          if (profile.current_weights) {
-            setWeights(profile.current_weights);
-          }
-          if (profile.unit_preference) {
-            setUnit(profile.unit_preference);
+          setWeights({
+            squat: Number(profile.squat_weight) || 135,
+            bench: Number(profile.bench_weight) || 95,
+            press: Number(profile.press_weight) || 65,
+            deadlift: Number(profile.deadlift_weight) || 225,
+          });
+          if (profile.unit) {
+            setUnit(profile.unit);
           }
         }
 
@@ -60,13 +63,13 @@ export function useSupabaseData(session) {
             exercise_notes (*)
           `)
           .eq('user_id', userId)
-          .order('workout_date', { ascending: true });
+          .order('date', { ascending: true });
 
         if (workouts && workouts.length > 0) {
           const historyEntries = workouts.map(w => ({
             id: w.id,
-            type: w.workout_type,
-            date: w.workout_date,
+            type: w.type,
+            date: w.date,
             duration: w.duration_minutes,
             notes: w.notes,
             weights: w.workout_sets?.reduce((acc, s) => {
@@ -99,7 +102,12 @@ export function useSupabaseData(session) {
     if (supabase && userId) {
       await supabase
         .from('profiles')
-        .update({ current_weights: newWeights })
+        .update({
+          squat_weight: newWeights.squat,
+          bench_weight: newWeights.bench,
+          press_weight: newWeights.press,
+          deadlift_weight: newWeights.deadlift,
+        })
         .eq('id', userId);
     }
   }, [userId]);
@@ -112,7 +120,7 @@ export function useSupabaseData(session) {
     if (supabase && userId) {
       await supabase
         .from('profiles')
-        .update({ unit_preference: newUnit })
+        .update({ unit: newUnit })
         .eq('id', userId);
     }
   }, [userId]);
@@ -125,9 +133,9 @@ export function useSupabaseData(session) {
       unit,
     };
 
-    // Update local state immediately
+    // Update local state immediately, sorted by date ascending
     setHistory(prev => {
-      const next = [...prev, localEntry];
+      const next = [...prev, localEntry].sort((a, b) => new Date(a.date) - new Date(b.date));
       localStorage.setItem('lyftr_history', JSON.stringify(next));
       return next;
     });
@@ -143,8 +151,8 @@ export function useSupabaseData(session) {
         .from('workouts')
         .insert({
           user_id: userId,
-          workout_type: workoutData.type,
-          workout_date: localEntry.date,
+          type: workoutData.type,
+          date: localEntry.date,
           duration_minutes: workoutData.duration || null,
           completed: true,
           notes: workoutData.notes || null,
@@ -189,9 +197,15 @@ export function useSupabaseData(session) {
       }
 
       // Update profile weights
+      const w = workoutData.weights || weights;
       await supabase
         .from('profiles')
-        .update({ current_weights: workoutData.weights || weights })
+        .update({
+          squat_weight: w.squat,
+          bench_weight: w.bench,
+          press_weight: w.press,
+          deadlift_weight: w.deadlift,
+        })
         .eq('id', userId);
 
       localEntry.id = workout.id;
