@@ -48,7 +48,7 @@ export function BottomNav({ activeTab, onTabChange, hasActiveWorkout }) {
         <button
           className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => onTabChange('history')}
-          aria-label="History"
+          aria-label="Progress"
           aria-current={activeTab === 'history' ? 'page' : undefined}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,6 +57,18 @@ export function BottomNav({ activeTab, onTabChange, hasActiveWorkout }) {
             <line x1="6" y1="20" x2="6" y2="14" />
           </svg>
           Progress
+        </button>
+
+        <button
+          className={`nav-tab ${activeTab === 'coach' ? 'active' : ''}`}
+          onClick={() => onTabChange('coach')}
+          aria-label="Coach"
+          aria-current={activeTab === 'coach' ? 'page' : undefined}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Coach
         </button>
       </div>
     </nav>

@@ -1,38 +1,53 @@
 import { useState, useEffect } from 'react'
 import './index.css'
+import { supabase } from './lib/supabase'
+import { useSupabaseData } from './lib/useSupabaseData'
 import { WORKOUT_TYPES, getNextWorkoutType } from './logic/startingStrength'
+import { AuthScreen } from './components/AuthScreen'
 import { Dashboard } from './components/Dashboard'
 import { WorkoutLogger } from './components/WorkoutLogger'
 import { History } from './components/History'
+import { Coach } from './components/Coach'
 import { BottomNav } from './components/BottomNav'
 
 function App() {
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('home');
   const [activeWorkout, setActiveWorkout] = useState(null);
+  const [theme, setTheme] = useState('dark');
 
-  // Persist history in localStorage
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem('lyftr_history');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Check for existing session on mount
+  useEffect(() => {
+    if (!supabase) {
+      setAuthLoading(false);
+      return;
+    }
 
-  const [weights, setWeights] = useState(() => {
-    const saved = localStorage.getItem('lyftr_weights');
-    return saved ? JSON.parse(saved) : {
-      squat: 135,
-      bench: 95,
-      press: 65,
-      deadlift: 225
-    };
-  });
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Data hook -- uses Supabase when logged in, falls back to localStorage
+  const {
+    loading: dataLoading,
+    weights,
+    setWeights,
+    history,
+    unit,
+    setUnit,
+    saveWorkout,
+  } = useSupabaseData(session);
 
   const [nextType, setNextType] = useState(WORKOUT_TYPES.A);
-
-  const [theme, setTheme] = useState('dark');
-  const [unit, setUnit] = useState(() => {
-    const saved = localStorage.getItem('lyftr_unit');
-    return saved || 'lbs';
-  });
 
   useEffect(() => {
     if (history.length > 0) {
@@ -42,23 +57,12 @@ function App() {
   }, [history]);
 
   useEffect(() => {
-    localStorage.setItem('lyftr_history', JSON.stringify(history));
-  }, [history]);
-
-  useEffect(() => {
-    localStorage.setItem('lyftr_weights', JSON.stringify(weights));
-  }, [weights]);
-
-  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    localStorage.setItem('lyftr_unit', unit);
-  }, [unit]);
-
   const updateWeight = (id, newWeight) => {
-    setWeights(prev => ({ ...prev, [id]: newWeight }));
+    const newWeights = { ...weights, [id]: newWeight };
+    setWeights(newWeights);
   };
 
   const toggleTheme = () => {
@@ -66,22 +70,20 @@ function App() {
   };
 
   const toggleUnit = () => {
-    setUnit(prev => {
-      const newUnit = prev === 'lbs' ? 'kg' : 'lbs';
-      const factor = newUnit === 'kg' ? 1 / 2.20462 : 2.20462;
-      const increment = newUnit === 'kg' ? 2.5 : 5;
+    const newUnit = unit === 'lbs' ? 'kg' : 'lbs';
+    const factor = newUnit === 'kg' ? 1 / 2.20462 : 2.20462;
+    const increment = newUnit === 'kg' ? 2.5 : 5;
 
-      const newWeights = {};
-      Object.keys(weights).forEach(key => {
-        newWeights[key] = Math.round((weights[key] * factor) / increment) * increment;
-      });
-      setWeights(newWeights);
-      return newUnit;
+    const newWeights = {};
+    Object.keys(weights).forEach(key => {
+      newWeights[key] = Math.round((weights[key] * factor) / increment) * increment;
     });
+    setWeights(newWeights);
+    setUnit(newUnit);
   };
 
-  const handleComplete = (data) => {
-    setHistory(prev => [...prev, { ...data, unit }]);
+  const handleComplete = async (data) => {
+    await saveWorkout({ ...data, unit });
     setActiveWorkout(null);
     setActiveTab('home');
   };
@@ -97,14 +99,58 @@ function App() {
   };
 
   const handleTabChange = (tab) => {
-    // If switching to workout tab and there's an active workout, keep it
-    // If no active workout and clicking workout tab, start one
     if (tab === 'workout' && !activeWorkout) {
       handleStartWorkout();
       return;
     }
     setActiveTab(tab);
   };
+
+  const handleSignOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setSession(null);
+  };
+
+  // Loading state
+  if (authLoading || dataLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        gap: '16px',
+      }}>
+        <h1 style={{
+          fontSize: '2rem',
+          fontWeight: 900,
+          letterSpacing: '-0.04em',
+        }}>
+          Lyftr<span style={{ color: 'hsl(var(--primary))' }}>.</span>
+        </h1>
+        <div style={{
+          width: '24px',
+          height: '24px',
+          border: '2.5px solid hsl(var(--bg-elevated))',
+          borderTopColor: 'hsl(var(--primary))',
+          borderRadius: '50%',
+          animation: 'spin 0.6s linear infinite',
+        }} />
+      </div>
+    );
+  }
+
+  // Auth screen if not logged in
+  if (!session && supabase) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <AuthScreen onAuth={setSession} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -116,6 +162,15 @@ function App() {
         gap: '8px',
         padding: '12px 0 0',
       }}>
+        {session && (
+          <button
+            onClick={handleSignOut}
+            className="btn-ghost"
+            style={{ fontSize: '0.7rem', padding: '6px 10px', marginRight: 'auto' }}
+          >
+            Sign out
+          </button>
+        )}
         <button
           onClick={toggleUnit}
           className="btn-secondary"
@@ -194,6 +249,14 @@ function App() {
             unit={unit}
           />
         )}
+
+        {activeTab === 'coach' && (
+          <Coach
+            history={history}
+            weights={weights}
+            unit={unit}
+          />
+        )}
       </main>
 
       {/* Bottom Navigation */}
@@ -203,7 +266,7 @@ function App() {
         hasActiveWorkout={!!activeWorkout}
       />
     </div>
-  )
+  );
 }
 
 export default App

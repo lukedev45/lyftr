@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { formatRestTime, getRpeColor } from '../logic/rpe';
 
-const REST_OPTIONS = [60, 90, 120, 180, 300]; // seconds
-
-export function RestTimer({ onDismiss }) {
-  const [duration, setDuration] = useState(180); // 3 min default
-  const [remaining, setRemaining] = useState(180);
+export function RestTimer({ onDismiss, suggestedDuration, rpe }) {
+  const [duration, setDuration] = useState(suggestedDuration || 180);
+  const [remaining, setRemaining] = useState(suggestedDuration || 180);
   const [isRunning, setIsRunning] = useState(true);
   const intervalRef = useRef(null);
+
+  // Update when suggested duration changes
+  useEffect(() => {
+    if (suggestedDuration) {
+      setDuration(suggestedDuration);
+      setRemaining(suggestedDuration);
+      setIsRunning(true);
+    }
+  }, [suggestedDuration]);
 
   useEffect(() => {
     if (isRunning && remaining > 0) {
@@ -23,12 +31,6 @@ export function RestTimer({ onDismiss }) {
     return () => clearInterval(intervalRef.current);
   }, [isRunning, remaining]);
 
-  const formatTime = useCallback((seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  }, []);
-
   const progress = ((duration - remaining) / duration) * 100;
 
   const handleSetDuration = (d) => {
@@ -37,27 +39,47 @@ export function RestTimer({ onDismiss }) {
     setIsRunning(true);
   };
 
+  const rpeColor = rpe ? getRpeColor(rpe) : 'hsl(var(--primary))';
+
   return (
     <div className="rest-timer-bar animate-fade-in">
       <div className="rest-timer-inner">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-          <span style={{
-            fontSize: '0.7rem',
-            fontWeight: 600,
-            color: 'hsl(var(--text-muted))',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            whiteSpace: 'nowrap',
-          }}>
-            Rest
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+            <span style={{
+              fontSize: '0.6rem',
+              fontWeight: 600,
+              color: 'hsl(var(--text-muted))',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              whiteSpace: 'nowrap',
+            }}>
+              Rest
+            </span>
+            {rpe && (
+              <span style={{
+                fontSize: '0.6rem',
+                fontWeight: 700,
+                color: rpeColor,
+                whiteSpace: 'nowrap',
+              }}>
+                RPE {rpe}
+              </span>
+            )}
+          </div>
 
-          <div className="timer-display" style={remaining === 0 ? { animation: 'none', color: 'hsl(var(--success))' } : {}}>
-            {remaining === 0 ? 'GO' : formatTime(remaining)}
+          <div className="timer-display" style={{
+            ...(remaining === 0 ? { animation: 'none', color: 'hsl(var(--success))' } : {}),
+            color: remaining === 0 ? 'hsl(var(--success))' : rpeColor,
+          }}>
+            {remaining === 0 ? 'GO' : formatRestTime(remaining)}
           </div>
 
           <div className="timer-progress">
-            <div className="timer-progress-fill" style={{ width: `${progress}%` }} />
+            <div className="timer-progress-fill" style={{
+              width: `${progress}%`,
+              background: rpeColor,
+            }} />
           </div>
         </div>
 

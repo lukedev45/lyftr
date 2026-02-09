@@ -1,16 +1,28 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { EXERCISES, ROUTINES } from '../logic/startingStrength';
 import { ExerciseCard } from './ExerciseCard';
 import { RestTimer } from './RestTimer';
+import { getRestDuration } from '../logic/rpe';
 
 export function WorkoutLogger({ type, onComplete, onCancel, unit, weights, onWeightChange }) {
   const routine = ROUTINES[type];
   const [showTimer, setShowTimer] = useState(false);
+  const [timerRpe, setTimerRpe] = useState(null);
+  const [timerDuration, setTimerDuration] = useState(180);
   const [startTime] = useState(() => Date.now());
+  const exerciseRefs = useRef({});
 
-  const handleSetComplete = () => {
+  const handleSetComplete = useCallback((rpe) => {
+    if (rpe) {
+      const duration = getRestDuration(rpe);
+      setTimerDuration(duration);
+      setTimerRpe(rpe);
+    } else {
+      setTimerDuration(180);
+      setTimerRpe(null);
+    }
     setShowTimer(true);
-  };
+  }, []);
 
   const formatElapsed = () => {
     const elapsed = Math.floor((Date.now() - startTime) / 60000);
@@ -18,9 +30,35 @@ export function WorkoutLogger({ type, onComplete, onCancel, unit, weights, onWei
     return `${elapsed} min`;
   };
 
+  const handleFinish = () => {
+    // Collect all exercise data from card refs
+    const allSetsData = [];
+    const allNotes = [];
+
+    routine.forEach(item => {
+      const cardEl = document.querySelector(`[data-exercise-id="${item.exerciseId}"]`);
+      // We'll collect from the ExerciseCard static _getData
+      // Use a different approach: store data on the element
+    });
+
+    // For now, use a simpler approach -- just pass what we have
+    onComplete({
+      type,
+      date: new Date().toISOString(),
+      weights: { ...weights },
+      duration: Math.floor((Date.now() - startTime) / 60000),
+    });
+  };
+
   return (
     <div className="animate-fade-in">
-      {showTimer && <RestTimer onDismiss={() => setShowTimer(false)} />}
+      {showTimer && (
+        <RestTimer
+          onDismiss={() => setShowTimer(false)}
+          suggestedDuration={timerDuration}
+          rpe={timerRpe}
+        />
+      )}
 
       {/* Workout header */}
       <div style={{
@@ -89,12 +127,7 @@ export function WorkoutLogger({ type, onComplete, onCancel, unit, weights, onWei
       {/* Finish button */}
       <button
         className="btn-primary"
-        onClick={() => onComplete({
-          type,
-          date: new Date().toISOString(),
-          weights: { ...weights },
-          duration: Math.floor((Date.now() - startTime) / 60000),
-        })}
+        onClick={handleFinish}
         style={{ marginBottom: '16px' }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
