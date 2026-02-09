@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import './index.css'
+import { WORKOUT_TYPES, getNextWorkoutType } from './logic/startingStrength'
+import { Dashboard } from './components/Dashboard'
 import { WorkoutLogger } from './components/WorkoutLogger'
-import { WORKOUT_TYPES, getNextWorkoutType, ROUTINES, EXERCISES } from './logic/startingStrength'
-import { ContributionGraph } from './components/ContributionGraph'
+import { History } from './components/History'
+import { BottomNav } from './components/BottomNav'
 
 function App() {
+  const [activeTab, setActiveTab] = useState('home');
   const [activeWorkout, setActiveWorkout] = useState(null);
-  
+
   // Persist history in localStorage
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('lyftr_history');
@@ -25,8 +28,13 @@ function App() {
 
   const [nextType, setNextType] = useState(WORKOUT_TYPES.A);
 
+  const [theme, setTheme] = useState('dark');
+  const [unit, setUnit] = useState(() => {
+    const saved = localStorage.getItem('lyftr_unit');
+    return saved || 'lbs';
+  });
+
   useEffect(() => {
-    // Determine next workout type based on last history entry
     if (history.length > 0) {
       const last = history[history.length - 1];
       setNextType(getNextWorkoutType(last.type));
@@ -41,16 +49,6 @@ function App() {
     localStorage.setItem('lyftr_weights', JSON.stringify(weights));
   }, [weights]);
 
-  const updateWeight = (id, newWeight) => {
-    setWeights(prev => ({ ...prev, [id]: newWeight }));
-  };
-
-  const [theme, setTheme] = useState('dark');
-  const [unit, setUnit] = useState(() => {
-    const saved = localStorage.getItem('lyftr_unit');
-    return saved || 'lbs';
-  });
-
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
@@ -59,6 +57,10 @@ function App() {
     localStorage.setItem('lyftr_unit', unit);
   }, [unit]);
 
+  const updateWeight = (id, newWeight) => {
+    setWeights(prev => ({ ...prev, [id]: newWeight }));
+  };
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
@@ -66,10 +68,9 @@ function App() {
   const toggleUnit = () => {
     setUnit(prev => {
       const newUnit = prev === 'lbs' ? 'kg' : 'lbs';
-      // Convert current weights
       const factor = newUnit === 'kg' ? 1 / 2.20462 : 2.20462;
       const increment = newUnit === 'kg' ? 2.5 : 5;
-      
+
       const newWeights = {};
       Object.keys(weights).forEach(key => {
         newWeights[key] = Math.round((weights[key] * factor) / increment) * increment;
@@ -82,129 +83,125 @@ function App() {
   const handleComplete = (data) => {
     setHistory(prev => [...prev, { ...data, unit }]);
     setActiveWorkout(null);
+    setActiveTab('home');
+  };
+
+  const handleStartWorkout = () => {
+    setActiveWorkout(nextType);
+    setActiveTab('workout');
+  };
+
+  const handleCancelWorkout = () => {
+    setActiveWorkout(null);
+    setActiveTab('home');
+  };
+
+  const handleTabChange = (tab) => {
+    // If switching to workout tab and there's an active workout, keep it
+    // If no active workout and clicking workout tab, start one
+    if (tab === 'workout' && !activeWorkout) {
+      handleStartWorkout();
+      return;
+    }
+    setActiveTab(tab);
   };
 
   return (
-    <div className="app-container">
-      <header style={{ padding: '2rem 0', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.2rem'}}>
-            Lyftr<span style={{ color: 'hsl(var(--primary))' }}>.</span>
-          </h1>
-          <p style={{ color: 'hsl(var(--text-secondary))' }}>Strength made simple.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button 
-            onClick={toggleUnit}
-            style={{ 
-              padding: '0 12px', 
-              borderRadius: '20px', 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--bg-input)',
-              color: 'hsl(var(--text-primary))',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              height: '40px'
-            }}
-          >
-            {unit.toUpperCase()}
-          </button>
-          <button 
-            onClick={toggleTheme}
-            style={{ 
-              padding: '8px', 
-              borderRadius: '50%', 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--bg-input)',
-              color: 'var(--text-secondary)',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-        </div>
-      </header>
-      
-      <main>
-        {activeWorkout ? (
-          <div className="animation-fade-in">
-             <button 
-                onClick={() => setActiveWorkout(null)}
-                style={{ color: 'hsl(var(--text-muted))', marginBottom: '1rem', fontSize: '0.9rem' }}
-             >
-               ← Cancel Workout
-             </button>
-             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>
-               Workout {activeWorkout}
-             </h2>
-             <WorkoutLogger 
-               type={activeWorkout} 
-               onComplete={handleComplete} 
-               unit={unit} 
-               weights={weights}
-               onWeightChange={updateWeight}
-             />
-          </div>
-        ) : (
-          <div className="dashboard animation-fade-in">
-            <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', textAlign: 'center' }}>
-               <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Ready to train?</h2>
-               <p style={{ color: 'hsl(var(--text-secondary))', marginBottom: '1.5rem' }}>
-                 Next up is <strong>Workout {nextType}</strong>
-               </p>
-               
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                  {WORKOUT_TYPES[nextType] === nextType && (
-                    ROUTINES[nextType].map(item => {
-                      const exercise = Object.values(EXERCISES).find(e => e.id === item.exerciseId);
-                      return (
-                        <div key={item.exerciseId} style={{ background: 'hsl(var(--bg-input))', padding: '12px', borderRadius: '12px', textAlign: 'left' }}>
-                           <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', marginBottom: '4px' }}>{exercise.name}</div>
-                           <div style={{ display: 'flex', alignItems: 'center' }}>
-                             <input 
-                               type="number"
-                               value={weights[item.exerciseId]}
-                               onChange={(e) => updateWeight(item.exerciseId, Number(e.target.value))}
-                               style={{ 
-                                 background: 'none', 
-                                 border: 'none', 
-                                 color: 'hsl(var(--text-primary))', 
-                                 fontSize: '1.1rem', 
-                                 fontWeight: 700,
-                                 width: '100%',
-                                 outline: 'none'
-                               }}
-                             />
-                             <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>{unit}</span>
-                           </div>
-                        </div>
-                      );
-                    })
-                  )}
-               </div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      {/* Settings bar */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '12px 0 0',
+      }}>
+        <button
+          onClick={toggleUnit}
+          className="btn-secondary"
+          style={{
+            fontSize: '0.75rem',
+            padding: '6px 12px',
+            borderRadius: '100px',
+            fontWeight: 700,
+          }}
+        >
+          {unit.toUpperCase()}
+        </button>
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: 'hsl(var(--bg-card))',
+            border: '1px solid hsl(var(--bg-elevated))',
+            color: 'hsl(var(--text-secondary))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.9rem',
+          }}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+      </div>
 
-               <button 
-                 className="btn-primary"
-                 onClick={() => setActiveWorkout(nextType)}
-               >
-                 Start Workout {nextType}
-               </button>
-            </div>
+      {/* Main content area */}
+      <main style={{ flex: 1 }}>
+        {activeTab === 'home' && !activeWorkout && (
+          <Dashboard
+            nextType={nextType}
+            weights={weights}
+            onWeightChange={updateWeight}
+            onStartWorkout={handleStartWorkout}
+            history={history}
+            unit={unit}
+          />
+        )}
 
-            <section>
-              <h3 style={{ fontSize: '1rem', color: 'hsl(var(--text-muted))', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Recent Activity
-              </h3>
-              <ContributionGraph history={history} />
-            </section>
-          </div>
+        {(activeTab === 'workout' && activeWorkout) && (
+          <WorkoutLogger
+            type={activeWorkout}
+            onComplete={handleComplete}
+            onCancel={handleCancelWorkout}
+            unit={unit}
+            weights={weights}
+            onWeightChange={updateWeight}
+          />
+        )}
+
+        {activeTab === 'history' && (
+          <History
+            history={history}
+            unit={unit}
+          />
         )}
       </main>
+
+      {/* Bottom Navigation */}
+      <BottomNav
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        hasActiveWorkout={!!activeWorkout}
+      />
     </div>
   )
 }
