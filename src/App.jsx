@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import './index.css'
 import { WorkoutLogger } from './components/WorkoutLogger'
-import { WORKOUT_TYPES, getNextWorkoutType } from './logic/startingStrength'
-import { ContributionGraph } from './components/ContributionGraph' // Will create next
+import { WORKOUT_TYPES, getNextWorkoutType, ROUTINES, EXERCISES } from './logic/startingStrength'
+import { ContributionGraph } from './components/ContributionGraph'
 
 function App() {
   const [activeWorkout, setActiveWorkout] = useState(null);
@@ -11,6 +11,16 @@ function App() {
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('lyftr_history');
     return saved ? JSON.parse(saved) : [];
+  });
+
+  const [weights, setWeights] = useState(() => {
+    const saved = localStorage.getItem('lyftr_weights');
+    return saved ? JSON.parse(saved) : {
+      squat: 135,
+      bench: 95,
+      press: 65,
+      deadlift: 225
+    };
   });
 
   const [nextType, setNextType] = useState(WORKOUT_TYPES.A);
@@ -27,18 +37,50 @@ function App() {
     localStorage.setItem('lyftr_history', JSON.stringify(history));
   }, [history]);
 
+  useEffect(() => {
+    localStorage.setItem('lyftr_weights', JSON.stringify(weights));
+  }, [weights]);
+
+  const updateWeight = (id, newWeight) => {
+    setWeights(prev => ({ ...prev, [id]: newWeight }));
+  };
+
   const [theme, setTheme] = useState('dark');
+  const [unit, setUnit] = useState(() => {
+    const saved = localStorage.getItem('lyftr_unit');
+    return saved || 'lbs';
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    localStorage.setItem('lyftr_unit', unit);
+  }, [unit]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
+  const toggleUnit = () => {
+    setUnit(prev => {
+      const newUnit = prev === 'lbs' ? 'kg' : 'lbs';
+      // Convert current weights
+      const factor = newUnit === 'kg' ? 1 / 2.20462 : 2.20462;
+      const increment = newUnit === 'kg' ? 2.5 : 5;
+      
+      const newWeights = {};
+      Object.keys(weights).forEach(key => {
+        newWeights[key] = Math.round((weights[key] * factor) / increment) * increment;
+      });
+      setWeights(newWeights);
+      return newUnit;
+    });
+  };
+
   const handleComplete = (data) => {
-    setHistory(prev => [...prev, data]);
+    setHistory(prev => [...prev, { ...data, unit }]);
     setActiveWorkout(null);
   };
 
@@ -51,24 +93,41 @@ function App() {
           </h1>
           <p style={{ color: 'hsl(var(--text-secondary))' }}>Strength made simple.</p>
         </div>
-        <button 
-          onClick={toggleTheme}
-          style={{ 
-            padding: '8px', 
-            borderRadius: '50%', 
-            background: 'var(--bg-card)', 
-            border: '1px solid var(--bg-input)',
-            color: 'var(--text-secondary)',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            onClick={toggleUnit}
+            style={{ 
+              padding: '0 12px', 
+              borderRadius: '20px', 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--bg-input)',
+              color: 'hsl(var(--text-primary))',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              height: '40px'
+            }}
+          >
+            {unit.toUpperCase()}
+          </button>
+          <button 
+            onClick={toggleTheme}
+            style={{ 
+              padding: '8px', 
+              borderRadius: '50%', 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--bg-input)',
+              color: 'var(--text-secondary)',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
       </header>
       
       <main>
@@ -83,7 +142,13 @@ function App() {
              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>
                Workout {activeWorkout}
              </h2>
-             <WorkoutLogger type={activeWorkout} onComplete={handleComplete} />
+             <WorkoutLogger 
+               type={activeWorkout} 
+               onComplete={handleComplete} 
+               unit={unit} 
+               weights={weights}
+               onWeightChange={updateWeight}
+             />
           </div>
         ) : (
           <div className="dashboard animation-fade-in">
@@ -92,6 +157,37 @@ function App() {
                <p style={{ color: 'hsl(var(--text-secondary))', marginBottom: '1.5rem' }}>
                  Next up is <strong>Workout {nextType}</strong>
                </p>
+               
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  {WORKOUT_TYPES[nextType] === nextType && (
+                    ROUTINES[nextType].map(item => {
+                      const exercise = Object.values(EXERCISES).find(e => e.id === item.exerciseId);
+                      return (
+                        <div key={item.exerciseId} style={{ background: 'hsl(var(--bg-input))', padding: '12px', borderRadius: '12px', textAlign: 'left' }}>
+                           <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', marginBottom: '4px' }}>{exercise.name}</div>
+                           <div style={{ display: 'flex', alignItems: 'center' }}>
+                             <input 
+                               type="number"
+                               value={weights[item.exerciseId]}
+                               onChange={(e) => updateWeight(item.exerciseId, Number(e.target.value))}
+                               style={{ 
+                                 background: 'none', 
+                                 border: 'none', 
+                                 color: 'hsl(var(--text-primary))', 
+                                 fontSize: '1.1rem', 
+                                 fontWeight: 700,
+                                 width: '100%',
+                                 outline: 'none'
+                               }}
+                             />
+                             <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>{unit}</span>
+                           </div>
+                        </div>
+                      );
+                    })
+                  )}
+               </div>
+
                <button 
                  className="btn-primary"
                  onClick={() => setActiveWorkout(nextType)}

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { calculateWarmup } from '../logic/warmup';
 
-export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, reps }) {
+export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, reps, unit }) {
   // actualReps: { [index]: number }
   // Initialize with null to indicate "not done", or pre-fill?
   // User asked for "put in their own reps instead of just checking".
@@ -10,7 +10,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
   const [actualReps, setActualReps] = useState({});
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const warmups = useMemo(() => calculateWarmup(targetWeight), [targetWeight]);
+  const warmups = useMemo(() => calculateWarmup(targetWeight, unit), [targetWeight, unit]);
 
   const handleRepChange = (index, value) => {
     // If value is empty string, keep it as empty string for UI, but logic might need to handle it.
@@ -64,7 +64,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
             }}
           />
           <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'hsl(var(--text-secondary))' }}>
-            lbs
+            {unit}
           </span>
         </div>
       </div>
@@ -77,7 +77,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
               {warmups.map((set, i) => (
                 <div key={`warmup-${i}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: 'hsl(var(--text-muted))' }}>
                   <span>{set.sets} x {set.reps}</span>
-                  <span>{set.weight} lbs</span>
+                  <span>{set.weight} {unit}</span>
                 </div>
               ))}
             </div>

@@ -26,7 +26,11 @@ export function roundWeight(weight, increment = 5) {
  * Set 3: Bar + (Gap * 0.50) -> 3 reps
  * Set 4: Bar + (Gap * 0.75) -> 2 reps
  */
-export function calculateWarmup(workWeight, barWeight = 45) {
+export function calculateWarmup(workWeight, unit = 'lbs') {
+  const isMetric = unit === 'kg';
+  const barWeight = isMetric ? 20 : 45;
+  const increment = isMetric ? 2.5 : 5;
+
   if (workWeight <= barWeight) return [];
 
   const sets = [];
@@ -36,13 +40,13 @@ export function calculateWarmup(workWeight, barWeight = 45) {
 
   const gap = workWeight - barWeight;
   
-  // If the gap is small, we might not need all warmups, but sticking to protocol for consistency
-  // unless the weight is very low.
-  
-  if (workWeight > barWeight + 20) {
-      const w1 = roundWeight(barWeight + (gap * 0.25));
-      const w2 = roundWeight(barWeight + (gap * 0.50));
-      const w3 = roundWeight(barWeight + (gap * 0.75));
+  // If the gap is small, we might not need all warmups
+  const minGap = isMetric ? 10 : 20;
+
+  if (workWeight > barWeight + minGap) {
+      const w1 = roundWeight(barWeight + (gap * 0.25), increment);
+      const w2 = roundWeight(barWeight + (gap * 0.50), increment);
+      const w3 = roundWeight(barWeight + (gap * 0.75), increment);
 
       // Filter out duplicate weights if they round to the same thing
       const warmups = [

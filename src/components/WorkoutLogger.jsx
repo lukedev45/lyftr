@@ -2,22 +2,11 @@ import { useState } from 'react';
 import { EXERCISES, ROUTINES } from '../logic/startingStrength';
 import { ExerciseCard } from './ExerciseCard';
 
-export function WorkoutLogger({ type, onComplete }) {
-  // Mock initial weights - in real app, load from history
-  const [weights, setWeights] = useState({
-    [EXERCISES.SQUAT.id]: 135,
-    [EXERCISES.BENCH.id]: 95,
-    [EXERCISES.PRESS.id]: 65,
-    [EXERCISES.DEADLIFT.id]: 225
-  });
-
+export function WorkoutLogger({ type, onComplete, unit, weights, onWeightChange }) {
   const routine = ROUTINES[type];
 
   const handleWeightChange = (id, newWeight) => {
-    setWeights(prev => ({
-      ...prev,
-      [id]: newWeight
-    }));
+    onWeightChange(id, newWeight);
   };
 
   return (
@@ -33,6 +22,7 @@ export function WorkoutLogger({ type, onComplete }) {
               reps={item.reps}
               targetWeight={weights[item.exerciseId]}
               onWeightChange={(w) => handleWeightChange(item.exerciseId, w)}
+              unit={unit}
             />
           );
         })}
