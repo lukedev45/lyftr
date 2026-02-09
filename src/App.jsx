@@ -6,6 +6,7 @@ import { WORKOUT_TYPES, getNextWorkoutType } from './logic/startingStrength'
 import { AuthScreen } from './components/AuthScreen'
 import { Dashboard } from './components/Dashboard'
 import { WorkoutLogger } from './components/WorkoutLogger'
+import { PastWorkoutLogger } from './components/PastWorkoutLogger'
 import { History } from './components/History'
 import { Coach } from './components/Coach'
 import { BottomNav } from './components/BottomNav'
@@ -15,6 +16,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('home');
   const [activeWorkout, setActiveWorkout] = useState(null);
+  const [showPastWorkout, setShowPastWorkout] = useState(false);
   const [theme, setTheme] = useState('dark');
 
   // Check for existing session on mount
@@ -96,6 +98,11 @@ function App() {
   const handleCancelWorkout = () => {
     setActiveWorkout(null);
     setActiveTab('home');
+  };
+
+  const handleSavePastWorkout = async (data) => {
+    await saveWorkout(data);
+    setShowPastWorkout(false);
   };
 
   const handleTabChange = (tab) => {
@@ -221,18 +228,28 @@ function App() {
 
       {/* Main content area */}
       <main style={{ flex: 1 }}>
-        {activeTab === 'home' && !activeWorkout && (
+        {showPastWorkout && (
+          <PastWorkoutLogger
+            onSave={handleSavePastWorkout}
+            onCancel={() => setShowPastWorkout(false)}
+            unit={unit}
+            currentWeights={weights}
+          />
+        )}
+
+        {!showPastWorkout && activeTab === 'home' && !activeWorkout && (
           <Dashboard
             nextType={nextType}
             weights={weights}
             onWeightChange={updateWeight}
             onStartWorkout={handleStartWorkout}
+            onAddPastWorkout={() => setShowPastWorkout(true)}
             history={history}
             unit={unit}
           />
         )}
 
-        {(activeTab === 'workout' && activeWorkout) && (
+        {!showPastWorkout && (activeTab === 'workout' && activeWorkout) && (
           <WorkoutLogger
             type={activeWorkout}
             onComplete={handleComplete}
@@ -243,14 +260,15 @@ function App() {
           />
         )}
 
-        {activeTab === 'history' && (
+        {!showPastWorkout && activeTab === 'history' && (
           <History
             history={history}
             unit={unit}
+            onAddPastWorkout={() => setShowPastWorkout(true)}
           />
         )}
 
-        {activeTab === 'coach' && (
+        {!showPastWorkout && activeTab === 'coach' && (
           <Coach
             history={history}
             weights={weights}
