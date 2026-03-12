@@ -1,4 +1,4 @@
-# Lyftr<span style="color: #ffb94fff">.</span>
+# Lyftr<span style="color: #ffb94fff">.</span> (WIP!!!)
 
 **Lyftr** is a premium, minimalist strength tracking application designed specifically for athletes following the **Starting Strength** protocol. Focus on your lifts, and let Lyftr handle the math, the rest, and the coaching.
 
