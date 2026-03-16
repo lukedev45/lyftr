@@ -146,6 +146,7 @@ export function Coach({ history, weights, unit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (inputRef.current) inputRef.current.style.height = 'auto';
     sendMessage(input);
   };
 
@@ -306,11 +307,22 @@ export function Coach({ history, weights, unit }) {
           borderTop: '1px solid hsl(var(--bg-elevated))',
         }}
       >
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
+          rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onInput={(e) => {
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              if (inputRef.current) inputRef.current.style.height = 'auto';
+              sendMessage(input);
+            }
+          }}
           placeholder="Ask about exercises, pain, stalls..."
           disabled={isStreaming}
           style={{
@@ -323,6 +335,11 @@ export function Coach({ history, weights, unit }) {
             fontSize: '0.9rem',
             outline: 'none',
             transition: 'var(--transition-fast)',
+            resize: 'none',
+            overflow: 'hidden',
+            maxHeight: '120px',
+            fontFamily: 'inherit',
+            lineHeight: 1.5,
           }}
         />
         <button

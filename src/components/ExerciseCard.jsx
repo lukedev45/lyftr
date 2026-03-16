@@ -40,6 +40,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
 
   const handleRpeSelect = (rpe) => {
     if (pendingRpeSet === null) return;
+    if (navigator.vibrate) navigator.vibrate(50);
 
     setRpeValues(prev => ({ ...prev, [pendingRpeSet]: rpe }));
     setCompletedSets(prev => ({ ...prev, [pendingRpeSet]: true }));
@@ -92,8 +93,8 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <div>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.01em', color: 'hsl(var(--text-primary))' }}>
+        <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.01em', color: 'hsl(var(--text-primary))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {exercise.name}
           </h3>
           {allSetsComplete && (
@@ -108,7 +109,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
           <button
             onClick={() => onWeightChange(Math.max(0, targetWeight - increment))}
             style={{
-              width: '28px', height: '28px', borderRadius: '6px',
+              width: '36px', height: '36px', borderRadius: '6px',
               background: 'hsl(var(--bg-input))', color: 'hsl(var(--text-muted))',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.9rem', fontWeight: 700,
@@ -130,7 +131,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
           <button
             onClick={() => onWeightChange(targetWeight + increment)}
             style={{
-              width: '28px', height: '28px', borderRadius: '6px',
+              width: '36px', height: '36px', borderRadius: '6px',
               background: 'hsl(var(--bg-input))', color: 'hsl(var(--text-muted))',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.9rem', fontWeight: 700,
@@ -171,7 +172,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
         <div className="section-label" style={{ marginBottom: '8px' }}>
           {'Work sets \u2014 '}{sets}x{reps} @ {targetWeight}{unit}
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="work-sets-row" style={{ display: 'flex', gap: '8px' }}>
           {workSets.map((set, i) => {
             const isComplete = completedSets[i];
             const repVal = actualReps[i] || '';
@@ -179,7 +180,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
             const setRpe = rpeValues[i];
 
             return (
-              <div key={`work-${i}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div key={`work-${i}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
                 {/* Rep input */}
                 <input
                   type="number"
@@ -212,6 +213,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
                   onClick={() => handleToggleSet(i)}
                   style={{
                     padding: '8px',
+                    minHeight: '44px',
                     borderRadius: 'var(--radius-sm)',
                     background: isComplete
                       ? (setRpe ? getRpeColor(setRpe) : 'hsl(var(--success))')
@@ -266,7 +268,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
                   key={rpe}
                   onClick={() => handleRpeSelect(rpe)}
                   style={{
-                    padding: '10px 12px',
+                    padding: '12px 14px',
                     borderRadius: 'var(--radius-sm)',
                     background: 'hsl(var(--bg-elevated))',
                     color: getRpeColor(rpe),
@@ -276,13 +278,13 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '2px',
-                    minWidth: '52px',
+                    minWidth: '60px',
                     transition: 'var(--transition-fast)',
                   }}
                 >
                   <span>{rpe}</span>
                   <span style={{
-                    fontSize: '0.55rem',
+                    fontSize: '0.6rem',
                     fontWeight: 500,
                     color: 'hsl(var(--text-muted))',
                     whiteSpace: 'nowrap',
@@ -294,7 +296,7 @@ export function ExerciseCard({ exercise, targetWeight, onWeightChange, sets, rep
             </div>
             <button
               onClick={() => {
-                // Skip RPE -- complete without rating
+                if (navigator.vibrate) navigator.vibrate(50);
                 setCompletedSets(prev => ({ ...prev, [pendingRpeSet]: true }));
                 if (onSetComplete) onSetComplete(null);
                 setPendingRpeSet(null);

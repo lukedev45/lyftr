@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './index.css'
 import { supabase } from './lib/supabase'
 import { useSupabaseData } from './lib/useSupabaseData'
@@ -18,6 +18,32 @@ function App() {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [showPastWorkout, setShowPastWorkout] = useState(false);
   const [theme, setTheme] = useState('dark');
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Virtual keyboard: scroll active input into view when keyboard opens
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const handleResize = () => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    };
+    window.visualViewport.addEventListener('resize', handleResize);
+    return () => window.visualViewport.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Offline indicator
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -161,6 +187,26 @@ function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      {/* Offline banner */}
+      {isOffline && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 200,
+          background: 'hsl(var(--bg-elevated))',
+          color: 'hsl(var(--text-secondary))',
+          textAlign: 'center',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          padding: '8px 16px',
+          borderBottom: '1px solid hsl(var(--bg-card))',
+        }}>
+          You&apos;re offline — data saved locally
+        </div>
+      )}
+
       {/* Settings bar */}
       <div style={{
         display: 'flex',
@@ -173,7 +219,7 @@ function App() {
           <button
             onClick={handleSignOut}
             className="btn-ghost"
-            style={{ fontSize: '0.7rem', padding: '6px 10px', marginRight: 'auto' }}
+            style={{ fontSize: '0.7rem', padding: '8px 12px', marginRight: 'auto' }}
           >
             Sign out
           </button>
@@ -193,8 +239,8 @@ function App() {
         <button
           onClick={toggleTheme}
           style={{
-            width: '36px',
-            height: '36px',
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
             background: 'hsl(var(--bg-card))',
             border: '1px solid hsl(var(--bg-elevated))',

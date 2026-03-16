@@ -382,6 +382,31 @@ input[type="number"] {
   transition: width 1s linear;
 }
 
+/* ── Mobile Media Queries ── */
+
+/* Narrow screens: wrap work sets to 2-per-row */
+@media (max-width: 360px) {
+  .work-sets-row { flex-wrap: wrap; }
+  .work-sets-row > * { flex: 1 1 calc(50% - 4px); min-width: calc(50% - 4px); }
+}
+
+/* Very small screens: shrink stat numbers */
+@media (max-width: 374px) {
+  .stat-number { font-size: 1.5rem; }
+  .stat-label { font-size: 0.65rem; }
+}
+
+/* Rest timer: wrap on narrow phones */
+@media (max-width: 400px) {
+  .rest-timer-inner { flex-wrap: wrap; gap: 8px; }
+}
+
+/* Landscape with short viewport */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root { --nav-height: 56px; }
+  .rest-timer-bar { padding: 8px 16px; }
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 4px;

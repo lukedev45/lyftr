@@ -56,6 +56,7 @@ export function ContributionGraph({ history }) {
         fontSize: '0.65rem',
         color: 'hsl(var(--text-muted))',
         fontWeight: 500,
+        overflow: 'hidden',
       }}>
         {months.map((m, i) => (
           <span key={i} style={{
@@ -68,6 +69,7 @@ export function ContributionGraph({ history }) {
       </div>
 
       {/* Grid */}
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
       <div style={{
         display: 'grid',
         gridTemplateRows: 'repeat(7, 1fr)',
@@ -87,6 +89,7 @@ export function ContributionGraph({ history }) {
             }}
           />
         ))}
+      </div>
       </div>
 
       {/* Legend */}

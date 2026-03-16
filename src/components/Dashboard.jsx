@@ -57,15 +57,15 @@ export function Dashboard({ nextType, weights, onWeightChange, onStartWorkout, o
 
       {/* Stats Row */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }} className="stagger">
-        <div className="card animate-fade-in-up" style={{ flex: 1, padding: '16px' }}>
+        <div className="card animate-fade-in-up" style={{ flex: 1, padding: '16px', minWidth: 0 }}>
           <div className="stat-number">{stats.totalSessions}</div>
           <div className="stat-label">Sessions</div>
         </div>
-        <div className="card animate-fade-in-up" style={{ flex: 1, padding: '16px' }}>
+        <div className="card animate-fade-in-up" style={{ flex: 1, padding: '16px', minWidth: 0 }}>
           <div className="stat-number">{stats.streak}</div>
           <div className="stat-label">Streak</div>
         </div>
-        <div className="card animate-fade-in-up" style={{ flex: 1, padding: '16px' }}>
+        <div className="card animate-fade-in-up" style={{ flex: 1, padding: '16px', minWidth: 0 }}>
           <div className="stat-number" style={{ color: stats.daysSinceLast !== null && stats.daysSinceLast <= 1 ? 'hsl(var(--success))' : undefined }}>
             {stats.daysSinceLast !== null ? stats.daysSinceLast : '--'}
           </div>
