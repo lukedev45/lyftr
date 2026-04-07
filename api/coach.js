@@ -79,28 +79,16 @@ export default async function handler(req, res) {
       messages: modelMessages,
     });
 
-    // Pipe the stream to the response
-    const stream = result.toTextStreamResponse();
-    
     // Set headers for streaming
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
     
-    // Pipe the readable stream to the response
-    const reader = stream.body.getReader();
+    // Stream text chunks directly using the async iterable
+    for await (const chunk of result.textStream) {
+      res.write(chunk);
+    }
     
-    const pump = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          res.end();
-          break;
-        }
-        res.write(value);
-      }
-    };
-    
-    await pump();
+    res.end();
   } catch (error) {
     console.error('Coach API error:', error);
     if (!res.headersSent) {
