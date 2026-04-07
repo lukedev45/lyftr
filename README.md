@@ -2,8 +2,6 @@
 
 **Lyftr** is a premium, minimalist strength tracking application designed specifically for athletes following the **Starting Strength** protocol. Focus on your lifts, and let Lyftr handle the math, the rest, and the coaching.
 
-![Lyftr Preview](https://via.placeholder.com/800x450/111113/ffb94fff?text=Lyftr+-+Strength+Made+Simple)
-
 ## ✨ Features
 
 ### 🏋️ Starting Strength Protocol
