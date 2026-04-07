@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText } from 'ai';
 
 const SYSTEM_PROMPT = `You are an expert strength and conditioning coach specializing in barbell training, particularly the Starting Strength linear progression program. Your role is to help lifters with:
 
@@ -27,13 +27,20 @@ IMPORTANT RULES:
 - Keep responses concise and actionable. No lengthy essays.
 - Use plain language, not overly technical jargon.`;
 
-export default async function handler(req, res) {
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler(req) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {
-    const { messages, context } = req.body;
+    const { messages, context } = await req.json();
 
     // Build context-enriched system prompt
     let enrichedSystem = SYSTEM_PROMPT;
@@ -73,27 +80,19 @@ export default async function handler(req, res) {
         : m.parts?.filter(p => p.type === 'text').map(p => p.text).join('') || '',
     }));
 
-    const result = streamText({
+    const result = await streamText({
       model: 'openai/gpt-4o-mini',
       system: enrichedSystem,
       messages: modelMessages,
     });
 
-    // Stream the response as SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    const stream = result.textStream;
-
-    for await (const chunk of stream) {
-      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
-    }
-
-    res.write('data: [DONE]\n\n');
-    res.end();
+    // Return the streaming response using AI SDK's built-in method
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('Coach API error:', error);
-    res.status(500).json({ error: 'Failed to generate response' });
+    return new Response(JSON.stringify({ error: 'Failed to generate response' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
