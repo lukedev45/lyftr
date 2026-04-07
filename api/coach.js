@@ -27,20 +27,13 @@ IMPORTANT RULES:
 - Keep responses concise and actionable. No lengthy essays.
 - Use plain language, not overly technical jargon.`;
 
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context } = req.body;
 
     // Build context-enriched system prompt
     let enrichedSystem = SYSTEM_PROMPT;
@@ -86,13 +79,32 @@ export default async function handler(req) {
       messages: modelMessages,
     });
 
-    // Return the streaming response using AI SDK's built-in method
-    return result.toTextStreamResponse();
+    // Pipe the stream to the response
+    const stream = result.toTextStreamResponse();
+    
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    
+    // Pipe the readable stream to the response
+    const reader = stream.body.getReader();
+    
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          res.end();
+          break;
+        }
+        res.write(value);
+      }
+    };
+    
+    await pump();
   } catch (error) {
     console.error('Coach API error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate response' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate response' });
+    }
   }
 }
