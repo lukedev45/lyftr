@@ -84,6 +84,7 @@ export function Coach({ history, weights, unit }) {
     setMessages([...newMessages, assistantMessage]);
 
     try {
+      console.log('[v0] Sending request to /api/coach');
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,42 +94,35 @@ export function Coach({ history, weights, unit }) {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get response');
+      console.log('[v0] Response status:', response.status, response.statusText);
+      console.log('[v0] Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('[v0] Error response body:', errorText);
+        throw new Error('Failed to get response');
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
-      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('data:')) {
-            const data = trimmed.slice(5).trim();
-            if (data === '[DONE]') break;
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.text) {
-                fullContent += parsed.text;
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = { role: 'assistant', content: fullContent };
-                  return updated;
-                });
-              }
-            } catch {
-              // Skip invalid JSON
-            }
-          }
-        }
+        // toTextStreamResponse() returns plain text chunks
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: fullContent };
+          return updated;
+        });
       }
+      
+      console.log('[v0] Stream complete, total content length:', fullContent.length);
     } catch (err) {
       console.error('Coach error:', err);
       setMessages(prev => {
